@@ -13,6 +13,17 @@ import { useRouter } from "next/navigation"
 import { createTempASSFile } from "@/lib/temp-ass-file"
 import { ASSParser } from "@/lib/ass-parser"
 
+// Helper function to convert a File to a Base64 string
+const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+
 export function UploadForm() {
   const [referenceUrl, setReferenceUrl] = useState("")
   const [inputFile, setInputFile] = useState<File | null>(null)
@@ -61,16 +72,13 @@ export function UploadForm() {
       const parsedASS = ASSParser.parse(assContent)
       const captions = ASSParser.convertToCaption(parsedASS)
 
+      // Convert the video file to a data URL to store in sessionStorage
+      const videoDataUrl = await fileToDataUrl(inputFile);
+
+
       // Store data in sessionStorage for the editor
       sessionStorage.setItem("referenceUrl", referenceUrl)
-      sessionStorage.setItem(
-        "inputFile",
-        JSON.stringify({
-          name: inputFile.name,
-          size: inputFile.size,
-          type: inputFile.type,
-        }),
-      )
+      sessionStorage.setItem("uploadedVideoUrl", videoDataUrl);
       sessionStorage.setItem("captions", JSON.stringify(captions))
 
       // Simulate processing with realistic progress
