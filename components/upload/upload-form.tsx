@@ -124,9 +124,8 @@ export function UploadForm() {
               placeholder="https://www.instagram.com/reel/..."
               value={referenceUrl}
               onChange={(e) => setReferenceUrl(e.target.value)}
-              className={`input-sky text-lg h-12 pr-12 ${
-                validationStatus.url === false ? "border-red-300 focus:border-red-500" : ""
-              }`}
+              className={`input-sky text-lg h-12 pr-12 ${validationStatus.url === false ? "border-red-300 focus:border-red-500" : ""
+                }`}
             />
             {validationStatus.url === true && (
               <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />

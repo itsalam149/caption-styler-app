@@ -4,16 +4,16 @@ import { useState, useRef, useEffect } from "react"
 import { VideoCanvas } from "@/components/editor/video-canvas"
 import { Timeline } from "@/components/editor/timeline"
 import { TextEditor } from "@/components/editor/text-editor"
-import { ControlsPanel } from "@/components/editor/controls-panel"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Download, Play, Pause, RotateCcw, Save, Share2, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { ASSParser } from "@/lib/ass-parser"
 
 export default function EditorPage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(45) // Default duration
+  const [duration, setDuration] = useState(45)
   const [selectedCaption, setSelectedCaption] = useState<number | null>(null)
   const [captions, setCaptions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -21,68 +21,20 @@ export default function EditorPage() {
   const router = useRouter()
   const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined)
 
-  // Load data from sessionStorage
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        const storedCaptions = sessionStorage.getItem("captions")
-        if (storedCaptions) {
-          const parsedCaptions = JSON.parse(storedCaptions)
-          setCaptions(parsedCaptions)
-          setIsLoading(false)
-        } else {
-          // Fallback to demo captions if no stored data
-          setCaptions([
-            {
-              id: 1,
-              text: "To all my gym girlies",
-              startTime: 0.24,
-              endTime: 1.0,
-              x: 50,
-              y: 85,
-              fontSize: 40,
-              color: "#ffffff",
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              fontFamily: "Poppins",
-              fontWeight: "600",
-              shadow: true,
-            },
-            {
-              id: 2,
-              text: "I just found your new gym bestie",
-              startTime: 1.4,
-              endTime: 3.28,
-              x: 50,
-              y: 85,
-              fontSize: 48,
-              color: "#00ffff",
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              fontFamily: "Poppins",
-              fontWeight: "bold",
-              shadow: true,
-            },
-            {
-              id: 3,
-              text: "Regular creatine felt like a toxic relationship",
-              startTime: 3.36,
-              endTime: 6.08,
-              x: 50,
-              y: 85,
-              fontSize: 44,
-              color: "#ffffff",
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              fontFamily: "Poppins",
-              fontWeight: "600",
-              shadow: true,
-            },
-          ])
-          setIsLoading(false)
-        }
+        const response = await fetch("/subtitles/output.ass")
+        const assContent = await response.text()
+        const parsedASS = ASSParser.parse(assContent)
+        const extractedCaptions = ASSParser.convertToCaption(parsedASS)
+        setCaptions(extractedCaptions)
 
-        const storedVideo = sessionStorage.getItem("uploadedVideoUrl")
+        const storedVideo = sessionStorage.getItem("inputFileBlobUrl")
         setVideoUrl(storedVideo ?? "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4")
       } catch (error) {
-        console.error("Error loading data:", error)
+        console.error("Error loading .ass file:", error)
+      } finally {
         setIsLoading(false)
       }
     }
@@ -125,7 +77,6 @@ export default function EditorPage() {
   }
 
   const exportVideo = () => {
-    // This would integrate with your backend
     console.log("Exporting video with captions:", captions)
     alert("Export functionality will be integrated with your backend!")
   }
@@ -135,12 +86,15 @@ export default function EditorPage() {
     alert("Project saved successfully!")
   }
 
-  const resetToOriginal = () => {
-    if (confirm("Are you sure you want to reset all changes?")) {
-      const storedCaptions = sessionStorage.getItem("captions")
-      if (storedCaptions) {
-        setCaptions(JSON.parse(storedCaptions))
-      }
+  const resetToOriginal = async () => {
+    try {
+      const response = await fetch("/subtitles/example.ass")
+      const assContent = await response.text()
+      const parsedASS = ASSParser.parse(assContent)
+      const extractedCaptions = ASSParser.convertToCaption(parsedASS)
+      setCaptions(extractedCaptions)
+    } catch (error) {
+      console.error("Failed to reset captions:", error)
     }
   }
 
@@ -159,7 +113,6 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
       <div className="container mx-auto px-4 py-6">
-        {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 space-y-4 lg:space-y-0">
           <div>
             <h1 className="text-3xl font-bold text-sky-900 mb-2">Caption Editor</h1>
@@ -191,7 +144,6 @@ export default function EditorPage() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Video Canvas */}
           <div className="xl:col-span-3 space-y-6">
             <Card className="card-sky p-6">
               <VideoCanvas
@@ -205,7 +157,6 @@ export default function EditorPage() {
                 onCaptionUpdate={updateCaption}
               />
 
-              {/* Video Controls */}
               <div className="flex items-center justify-center mt-6 space-x-6">
                 <Button
                   variant="outline"
@@ -227,7 +178,6 @@ export default function EditorPage() {
               </div>
             </Card>
 
-            {/* Timeline */}
             <Card className="timeline-container">
               <Timeline
                 duration={duration}
@@ -240,15 +190,9 @@ export default function EditorPage() {
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Text Editor */}
             <TextEditor selectedCaption={selectedCaption} captions={captions} onCaptionUpdate={updateCaption} />
 
-            {/* Controls Panel */}
-            <ControlsPanel selectedCaption={selectedCaption} captions={captions} onCaptionUpdate={updateCaption} />
-
-            {/* Quick Actions */}
             <Card className="control-panel p-4">
               <h3 className="font-semibold text-sky-900 mb-4 flex items-center">
                 <Settings className="w-5 h-5 mr-2" />
