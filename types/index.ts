@@ -1,14 +1,16 @@
 export interface Caption {
-  id: number
-  text: string
-  startTime: number
-  endTime: number
-  x: number
-  y: number
-  fontSize: number
-  color: string
-  backgroundColor: string
-  fontFamily: string
+  id: number;
+  text: string;
+  startTime: number;
+  endTime: number;
+  x: number; // position percentage from left
+  y: number;
+  fontSize: number;
+  color: string;
+  backgroundColor: string;
+  fontFamily: string;
+  fontWeight?: string;
+  shadow?: boolean;
 }
 
 export interface VideoFile {
